@@ -35,3 +35,4 @@ export FZF_ALT_C_OPTS="
   --header '| ctrl+s (change sort order) | ctrl+/ (change view) |'
   --walker-skip .git,node_modules,target
   --preview 'tree -C {}'" # requires "tree" to be installed
+# --preview 'eza --tree {}'" # requires "tree" to be installed
