@@ -8,11 +8,25 @@ function fdd {
   fd -td $* # | fzf
 }
 
+############################## function: Search file
+function fdf {
+  if [ ! "$#" -gt 0 ]; then
+    echo "Need a string to search for!"
+    return 1
+  fi
+
+  fd -tf $* # | fzf
+}
+
 ############################## function: show process
 function psf {
   ps -ef |
     fzf --bind 'ctrl-r:reload(ps -ef)' \
       --header 'Press CTRL-R to reload' --header-lines=1 \
+      --height 90% \
+      --border \
+      --border-label=' 💽 Find processes ' \
+      --border-label-pos=2 \
       --height=50% --layout=reverse
 }
 
@@ -30,6 +44,10 @@ function rgfzf {
   # if using vscode, use the following command
   local result=$(rg --color=always --line-number --no-heading --smart-case "${*:-}" |
     fzf -d':' --ansi \
+      --height 90% \
+      --border \
+      --border-label=' 🔍 Find string ' \
+      --border-label-pos=2 \
       --preview "bat -p --color=always {1} --highlight-line {2}" \
       --preview-window ~8,+{2}-5)
 
