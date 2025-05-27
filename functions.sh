@@ -65,21 +65,38 @@ function fif {
   rm -f /tmp/rg-fzf-{r,f}
   local RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
   local INITIAL_QUERY="${*:-}"
-  local result=$(fzf --ansi --disabled --query "$INITIAL_QUERY" \
+
+  if [[ -z "$INITIAL_QUERY" ]]; then
+    INITIAL_QUERY=$LBUFFER
+  fi
+
+  # Just clear the previous line, "moving" it to the fzf prompt
+  zle -I          # Clears any pending input/output
+  BUFFER=""       # Clears the line buffer
+  zle accept-line # Refresh/remove line buffer (previous data)
+
+  local result=$(fzf \
+    --height 90% \
+    --border \
+    --border-label=' 🔍 Find text ' \
+    --border-label-pos=2 \
+    --ansi --disabled --query "$INITIAL_QUERY" \
     --bind "start:reload($RG_PREFIX {q})+unbind(ctrl-r)" \
     --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
-    --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
-    --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
+    --bind "ctrl-f:unbind(change,ctrl-f)+change-border-label( 📂 Search in current files )+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
+    --bind "ctrl-r:unbind(ctrl-r)+change-border-label( 🔍 Find text )+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
     --color "hl:-1:underline,hl+:-1:underline:reverse" \
     --prompt '1. ripgrep> ' \
     --delimiter : \
     --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
     --preview 'bat --color=always {1} --highlight-line {2}' \
     --preview-window 'up,60%,border-bottom,+{2}+3/3,~3')
-  # --bind 'enter:become(code -g {1}:{2})+abort'
 
-  # Exit if nothing selected
-  [[ -z $result ]] && return 1
+  # Exit if nothing selected or interrupted
+  if [[ -z "$result" ]]; then
+    zle reset-prompt 2>/dev/null || true
+    return 1
+  fi
 
   local editor="${EDITOR:-nvim}"
 
